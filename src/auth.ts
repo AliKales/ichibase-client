@@ -50,9 +50,11 @@ export class Auth {
     path: string,
     opts: { method?: string; body?: unknown; auth?: string } = {},
   ): Promise<Result<T>> {
-    const headers: Record<string, string> = {
-      'Authorization': `Bearer ${opts.auth ?? this.key}`,
-    };
+    // auth-svc requires the project (anon/service) key in the `apikey` header.
+    // The end-user's access token — only when acting as a user (e.g. /me,
+    // /logout) — goes in Authorization: Bearer.
+    const headers: Record<string, string> = { apikey: this.key };
+    if (opts.auth) headers['Authorization'] = `Bearer ${opts.auth}`;
     if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
     return this.fetchFn(urlJoin(this.base, `/auth${path}`), {
       method: opts.method ?? 'POST',
