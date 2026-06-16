@@ -112,6 +112,9 @@ class SessionAuth {
   confirmPasswordReset(token: string, newPassword: string) {
     return this.inner.confirmPasswordReset(token, newPassword);
   }
+  confirmPasswordResetOtp(email: string, code: string, newPassword: string) {
+    return this.inner.confirmPasswordResetOtp(email, code, newPassword);
+  }
   verifyEmail(token: string) {
     return this.inner.verifyEmail(token);
   }

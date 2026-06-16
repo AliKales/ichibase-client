@@ -121,6 +121,21 @@ export class Auth {
     });
   }
 
+  /**
+   * Confirm a password reset with the emailed 6-digit CODE (when the project's
+   * reset mode is 'otp' or 'both'), rather than a link token. Same outcome as
+   * `confirmPasswordReset`.
+   */
+  confirmPasswordResetOtp(
+    email: string,
+    code: string,
+    new_password: string,
+  ): Promise<Result<{ reset: boolean }>> {
+    return this.call<{ reset: boolean }>('/password-reset/confirm-otp', {
+      body: { email, code, new_password },
+    });
+  }
+
   verifyEmail(token: string): Promise<Result<{ verified: boolean }>> {
     return this.call<{ verified: boolean }>('/verify-email', { body: { token } });
   }
