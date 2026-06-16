@@ -26,6 +26,24 @@ export interface LoginResult {
   user: { id: string; email: string };
 }
 
+/**
+ * Returned by `login` (in place of a session) when the project requires
+ * 2-step verification. A factor has been emailed; finish with `verifyTwoFactor`
+ * (the code) or `verifyTwoFactorMagic` (the token from the tapped link).
+ * `methods` lists what was sent: `'otp'`, `'magic'`, or both.
+ */
+export interface TwoFactorChallenge {
+  twofa_required: true;
+  methods: ('otp' | 'magic')[];
+}
+
+/** Narrow a login result to the 2FA-challenge branch. */
+export function isTwoFactorChallenge(
+  v: LoginResult | TwoFactorChallenge,
+): v is TwoFactorChallenge {
+  return (v as TwoFactorChallenge).twofa_required === true;
+}
+
 export interface RefreshResult {
   access_token: string;
   refresh_token: string;
@@ -67,8 +85,13 @@ export class Auth {
     return this.call<SignupResult>('/signup', { body: input });
   }
 
-  login(input: { email: string; password: string }): Promise<Result<LoginResult>> {
-    return this.call<LoginResult>('/login', { body: input });
+  // Returns a LoginResult (session) on success, OR a TwoFactorChallenge when the
+  // project requires 2-step verification — narrow with isTwoFactorChallenge.
+  login(input: {
+    email: string;
+    password: string;
+  }): Promise<Result<LoginResult | TwoFactorChallenge>> {
+    return this.call<LoginResult | TwoFactorChallenge>('/login', { body: input });
   }
 
   refresh(refresh_token: string): Promise<Result<RefreshResult>> {
@@ -146,6 +169,21 @@ export class Auth {
    */
   verifyMagicLink(token: string): Promise<Result<LoginResult>> {
     return this.call<LoginResult>('/login/magic', { body: { token } });
+  }
+
+  // ── 2-step verification (second factor after a password login) ────
+  // Call after `login` returns a TwoFactorChallenge. Returns the session.
+
+  /** Verify a 2FA code emailed after a correct password. */
+  verifyTwoFactor(input: { email: string; code: string }): Promise<Result<LoginResult>> {
+    return this.call<LoginResult>('/login/2fa/verify', {
+      body: { email: input.email, code: input.code },
+    });
+  }
+
+  /** Redeem a 2FA magic-link token (from the tapped link) after a password login. */
+  verifyTwoFactorMagic(token: string): Promise<Result<LoginResult>> {
+    return this.call<LoginResult>('/login/2fa/magic', { body: { token } });
   }
 
   // ── Phase 2 (v0.3.x) — bearer-authed profile + session mgmt ──────

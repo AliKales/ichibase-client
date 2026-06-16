@@ -78,6 +78,24 @@ const token = new URL(location.href).searchParams.get('token');
 await ichi.auth.verifyMagicLink(token!);
 ```
 
+#### 2-step verification (login)
+
+If the project requires it (custom SMTP), `login` returns a **2FA challenge**
+instead of a session — a code and/or magic link is emailed. Finish with
+`verifyTwoFactor` (the code) or `verifyTwoFactorMagic` (the token from the link).
+
+```ts
+const { data } = await ichi.auth.login({ email, password });
+if (data && isTwoFactorChallenge(data)) {
+  // a factor was emailed (data.methods) — prompt, then:
+  await ichi.auth.verifyTwoFactor({ email, code });
+  // …or from your magic-link landing page:
+  // await ichi.auth.verifyTwoFactorMagic(token);
+} else {
+  // no 2FA — `data` is the session
+}
+```
+
 #### Persisting the session
 
 The session lives in memory by default. Pass a storage adapter to keep users

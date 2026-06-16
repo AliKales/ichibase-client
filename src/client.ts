@@ -17,7 +17,9 @@ import { Mongo } from './mongo.js';
 import { Functions } from './functions.js';
 import {
   Auth,
+  isTwoFactorChallenge,
   type LoginResult,
+  type TwoFactorChallenge,
   type SignupResult,
   type RefreshResult,
   type UserProfile,
@@ -59,18 +61,15 @@ class SessionAuth {
     return this.inner.signup(input);
   }
 
-  async login(input: { email: string; password: string }): Promise<Result<LoginResult>> {
+  async login(input: {
+    email: string;
+    password: string;
+  }): Promise<Result<LoginResult | TwoFactorChallenge>> {
     const res = await this.inner.login(input);
-    if (res.data) {
-      await this.client._setSession(
-        {
-          access_token: res.data.access_token,
-          refresh_token: res.data.refresh_token,
-          expires_at: expiresAt(res.data.expires_in),
-          user: res.data.user,
-        },
-        'SIGNED_IN',
-      );
+    // Only set a session for the real-login branch. A TwoFactorChallenge has no
+    // tokens — the caller must finish via verifyTwoFactor / verifyTwoFactorMagic.
+    if (res.data && !isTwoFactorChallenge(res.data)) {
+      await this.applyLoginResult(res.data);
     }
     return res;
   }
@@ -140,6 +139,20 @@ class SessionAuth {
 
   async verifyMagicLink(token: string): Promise<Result<LoginResult>> {
     const res = await this.inner.verifyMagicLink(token);
+    if (res.data) await this.applyLoginResult(res.data);
+    return res;
+  }
+
+  // ── 2-step verification — finish a login that returned a challenge ─
+
+  async verifyTwoFactor(input: { email: string; code: string }): Promise<Result<LoginResult>> {
+    const res = await this.inner.verifyTwoFactor(input);
+    if (res.data) await this.applyLoginResult(res.data);
+    return res;
+  }
+
+  async verifyTwoFactorMagic(token: string): Promise<Result<LoginResult>> {
+    const res = await this.inner.verifyTwoFactorMagic(token);
     if (res.data) await this.applyLoginResult(res.data);
     return res;
   }

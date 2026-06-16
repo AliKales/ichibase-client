@@ -34,10 +34,11 @@ export type {
 // Per-domain classes + types (advanced / direct use).
 export { Postgrest, QueryBuilder } from './postgrest.js';
 export type { FilterOp, CountedResult } from './postgrest.js';
-export { Auth } from './auth.js';
+export { Auth, isTwoFactorChallenge } from './auth.js';
 export type {
   SignupResult,
   LoginResult,
+  TwoFactorChallenge,
   RefreshResult,
   UserProfile,
   UpdatedUser,
