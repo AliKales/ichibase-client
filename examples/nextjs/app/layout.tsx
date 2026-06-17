@@ -24,6 +24,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Link href="/mongo">Mongo</Link>
           <Link href="/postgres">Postgres</Link>
           <Link href="/realtime">Realtime</Link>
+          <Link href="/storage">Storage</Link>
           <Link href="/account">Account</Link>
           <span className="spacer" />
           {user ? (
